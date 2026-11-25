@@ -135,7 +135,7 @@ print(len(z1))
 print(z1[:3])
 print(z1[-3:])
 # TODO ② 합계·평균·평균(둘째 자리)·최대·최소·범위를 찍으세요
-avg = sum(z1) - len(z1)
+avg = sum(z1) / len(z1)
 span = max(z1) - min(z1)
 print(
     "합계:",
@@ -208,12 +208,12 @@ print("출렁이는쪽:", avg_wild, wild_s)
 
 # TODO ② 1존 온도의 가장 먼 거리와 흔들림(spread)을 찍으세요
 gaps = [abs(t - avg) for t in z1]
-print(max(gaps))
-print(sum(gaps) / len(gaps))
-
-
+spread = sum(gaps) / len(gaps)
+print("가장 먼 것:", round(max(gaps), 2))
+print("흔들림:", round(spread, 2))
 # TODO ③ 흔들림보다 멀리 떨어진 줄이 몇 줄인지 찍으세요
-
+far = sum(1 for g in gaps if g > spread)
+print(far, "줄")
 
 # =====================================================================
 # 실습 4 — 함수로 만들어 라인별로 비교합니다
@@ -260,11 +260,41 @@ print(sum(gaps) / len(gaps))
 print("=" * 60)
 print("[실습 4] 함수로 만들어 라인별로 비교합니다")
 
-# TODO ① stat() 함수를 만들고 1존 온도 전체로 찍으세요
-# TODO ② 주간·야간으로 나눠 각각 찍으세요
-# TODO ③ 줄 수 검산과, 이름을 잘못 적었을 때의 줄 수를 찍으세요
-# TODO ④ result 정상·이상으로도 나눠 찍으세요
 
+# TODO ① stat() 함수를 만들고 1존 온도 전체로 찍으세요
+def stat(values):
+    m = sum(values) / len(values)
+
+    return {
+        "개수": len(values),
+        "평균": round(m, 2),
+        "최대": max(values),
+        "최소": min(values),
+        "범위": round(max(values) - min(values), 2),
+        "흔들림": round(sum(abs(v - m) for v in values) / len(values), 2),
+    }
+
+
+print(stat(z1))
+
+# TODO ② 주간·야간으로 나눠 각각 찍으세요
+for line in ("주간", "야간"):
+    vals = [float(row[1]) for row in rows if row[6] == line]
+    print(line, stat(vals))
+
+# TODO ③ 줄 수 검산과, 이름을 잘못 적었을 때의 줄 수를 찍으세요
+day = len([row for row in rows if row[6] == "주간"])
+night = len([row for row in rows if row[6] == "야간"])
+print(day + night)
+
+day_wrong = len([row for row in rows if row[6] == "주강"])
+print(day_wrong, "줄")
+
+# TODO ④ result 정상·이상으로도 나눠 찍으세요
+for result in ("정상", "이상"):
+    vals = [float(row[1]) for row in rows if row[7] == result]
+
+    print(result, stat(vals))
 
 # =====================================================================
 # 실습 5 — 라벨을 보지 않고 수상한 줄 찾기
@@ -308,7 +338,29 @@ print("=" * 60)
 print("[실습 5] 라벨을 보지 않고 수상한 줄 찾기")
 
 # TODO ①② 흔들림 2배·3배 초과인 줄을 찾아 건수와 줄 내용을 찍으세요
+for k in (2, 3):
+    far = [row for row in rows if abs(float(row[1]) - avg) > k * spread]
+    print(f"흔들림 {k}배 초과: {len(far)}건")
+
+    for row in far:
+        print(
+            f"측정시각 {row[0]:>4} 온도 {row[1]:>7} "
+            f"평균과 차이 {round(float(row[1]) - avg, 2):>7}  result={row[7]}"
+        )
+
 # TODO ③ 2배 초과 중 result 이상 건수와, 전체 이상의 몇 %인지 찍으세요
+far2 = [row for row in rows if abs(float(row[1]) - avg) > 2 * spread]
+issue = len([row for row in far2 if row[7] == "이상"])
+result_issue = len([row for row in rows if row[7] == "이상"])
+# 비율 = 잡힌수 / 전체이상수 * 100
+print(len(far2), "건 중 result 이상", result_issue, "건")
+print(
+    "전체 이상",
+    result_issue,
+    "건의",
+    round(issue / result_issue * 100, 1),
+    "%를 잡았다",
+)
 
 
 # =====================================================================
@@ -354,9 +406,23 @@ print("=" * 60)
 print("[실습 6] 두 열이 같이 움직이나")
 
 # TODO ① (1존 온도, CP값) 짝을 만들어 온도 큰 순으로 세우고, 쌍 개수와 빠진 줄을 찍으세요
-# TODO ② 상위 5줄·하위 5줄과 각각의 CP값 평균을 찍으세요
-# TODO ③ 두 평균의 차이를 찍으세요
+pairs = sorted(
+    ((float(row[1]), float(row[3])) for row in rows if row[3] != ""), reverse=True
+)
+print("쌍 개수:", len(pairs), "/ 빠진 줄:", len(rows) - len(pairs))
 
+# TODO ② 상위 5줄·하위 5줄과 각각의 CP값 평균을 찍으세요
+hot = pairs[:5]
+cold = pairs[-5:]
+avg_hot = sum(p[1] for p in hot) / 5
+avg_cold = sum(p[1] for p in cold) / 5
+print("온도 상위 5줄:", hot)
+print("그때 CP값 평균", round(avg_hot, 3))
+print("온도 하위 5줄:", cold)
+print("그때 CP값 평균", round(avg_cold, 3))
+
+# TODO ③ 두 평균의 차이를 찍으세요
+print("두 평균의 차이:", round(avg_hot - avg_cold, 3))
 
 # =====================================================================
 # 실습 7 — 빈 칸이 섞인 열에서 평균 내기   ★오늘의 핵심
@@ -415,10 +481,37 @@ print("=" * 60)
 print("[실습 7] 빈 칸이 섞인 열에서 평균 내기")
 
 # TODO ① 그냥 평균을 내 보고, 터지는 오류를 try / except 로 받아 찍으세요
-# TODO ② 빈 칸을 건너뛰고 평균을 내고, 개수와 평균을 같이 찍으세요
-# TODO ③ 빈 칸을 0.0 으로 채우고 평균을 내고, 개수와 평균을 같이 찍으세요
-# TODO ④ 두 평균의 차이와 검산 두 줄을 찍으세요
+try:
+    op = [float(row[4]) for row in rows]
+    print("평균", sum(op) / len(op))
+except ValueError as e:
+    print(type(e).__name__, "-", e)
 
+# TODO ② 빈 칸을 건너뛰고 평균을 내고, 개수와 평균을 같이 찍으세요
+vals = []
+for row in rows:
+    if row[4] != "":
+        vals.append(float(row[4]))
+
+m_skip = sum(vals) / len(vals)
+print(len(vals), "개로 평균", round(m_skip, 2))
+
+# TODO ③ 빈 칸을 0.0 으로 채우고 평균을 내고, 개수와 평균을 같이 찍으세요
+fill = []
+for row in rows:
+    if row[4] == "":
+        fill.append(0.0)
+    else:
+        fill.append(float(row[4]))
+m_fill = sum(fill) / len(fill)
+print(len(fill), "개로 평균", round(m_fill, 2))
+
+# TODO ④ 두 평균의 차이와 검산 두 줄을 찍으세요
+diff = m_skip - m_fill
+print("차이", round(diff, 2))
+
+print("검산 1", len(vals) + (len(fill) - len(vals)))
+print("검산 2", round(m_skip * 6 / 120, 2))
 
 # =====================================================================
 # 실습 8 — 세 줄 보고서
@@ -455,6 +548,21 @@ print("=" * 60)
 print("[실습 8] 세 줄 보고서")
 
 # TODO ①~⑤ 다섯 줄을 f-string 으로 찍으세요
+print(
+    f"1) 소입로온도1존 {len(z1)}건의 평균은 {round(avg, 2)}, 흔들림은 {round(spread, 2)}입니다."
+)
+print(
+    f"2) result 이상 {result_issue}건의 온도 평균은 "
+    f"{stat([float(row[1]) for row in rows if row[7] == '이상'])['평균']}, "
+    f"정상{len(rows) - result_issue}건은 "
+    f"{stat([float(row[1]) for row in rows if row[7] == '정상'])['평균']} 입니다. "
+)
+print(f"3) 단 이상 표본이 {result_issue}건으로 적어 평균의 안정성은 낮습니다.")
+print(
+    f"4) OP값은 빈 칸 {len(rows) - len(vals)}개를 건너뛰고 {len(vals)}건으로 평균을 냈습니다."
+)
+print(f"5) {header[4]}이 무엇인지는 확인하지 못했습니다.")
+
 
 print("=" * 60)
 print("실습 8개 끝. 수고하셨습니다.")
